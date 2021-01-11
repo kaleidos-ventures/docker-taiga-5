@@ -36,10 +36,12 @@ spec:
       - name: {{ template "taiga.fullname" . }}-media-fix-permissions
         image: alpine
         command:
-          - chmod 777 /srv/taiga-back/media
+          - /bin/sh
+          - -c
+          - chmod 777 /taiga-back-media
         volumeMounts:
           - name: taiga-media
-            mountPath: /srv/taiga-back/media
+            mountPath: /taiga-back-media
       containers:
       # https://www.caktusgroup.com/blog/2017/03/14/production-ready-dockerfile-your-python-django-app/
       - name: {{ template "taiga.fullname" . }}-back
