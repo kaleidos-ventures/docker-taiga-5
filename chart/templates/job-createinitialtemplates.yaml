@@ -1,20 +1,20 @@
-{{- if .Values.createInitialUser }}
+{{- if .Values.createInitialTemplates }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "taiga.fullname" . }}-createinitialuser
+  name: {{ template "taiga.fullname" . }}-createinitialtemplates
 spec:
   template:
     spec:
       containers:
-      - name: createinitialuser
+      - name: createinitialtemplates
         image: {{ template "taiga.back.image" . }}
         command:
           - sh
-          - /scripts/createinitialuser.sh
+          - /scripts/createinitialtemplates.sh
         volumeMounts:
-          - name: createinitialuser
+          - name: createinitialtemplates
             mountPath: /scripts
           - name: front-config
             mountPath: /etc/opt/taiga-front
@@ -24,9 +24,9 @@ spec:
             mountPath: /opt/taiga-back/settings
       restartPolicy: Never
       volumes:
-        - name: createinitialuser
+        - name: createinitialtemplates
           configMap:
-            name: {{ template "taiga.fullname" . }}-createinitialuser
+            name: {{ template "taiga.fullname" . }}-createinitialtemplates
             defaultMode: 0744
         - name: front-config
           configMap:

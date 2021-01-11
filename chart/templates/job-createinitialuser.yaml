@@ -1,0 +1,41 @@
+{{- if .Values.createInitialUser }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "taiga.fullname" . }}-createinitialuser
+spec:
+  template:
+    spec:
+      containers:
+      - name: createinitialuser
+        image: {{ template "taiga.back.image" . }}
+        command:
+          - sh
+          - /scripts/createinitialuser.sh
+        volumeMounts:
+          - name: createinitialuser
+            mountPath: /scripts
+          - name: front-config
+            mountPath: /etc/opt/taiga-front
+          - name: back-config
+            mountPath: /etc/opt/taiga-back
+          - name: back-settings
+            mountPath: /opt/taiga-back/settings
+      restartPolicy: Never
+      volumes:
+        - name: createinitialuser
+          configMap:
+            name: {{ template "taiga.fullname" . }}-createinitialuser
+            defaultMode: 0744
+        - name: front-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-front
+        - name: back-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back
+        - name: back-settings
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back-settings
+  backoffLimit: 4
+{{- end }}

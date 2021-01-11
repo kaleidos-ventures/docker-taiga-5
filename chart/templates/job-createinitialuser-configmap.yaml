@@ -1,3 +1,4 @@
+{{- if .Values.createInitialUser }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -20,3 +21,4 @@ data:
     if [ "$superuserexists" == "0" ]; then
         python manage.py loaddata initial_user
     fi
+{{- end }}
