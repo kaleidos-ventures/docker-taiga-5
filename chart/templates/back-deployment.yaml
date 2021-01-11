@@ -32,6 +32,14 @@ spec:
       {{- with .Values.back.securityContext }}
       securityContext: {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+      - name: {{ template "taiga.fullname" . }}-media-fix-permissions
+        image: alpine
+        command:
+          - chmod 777 /srv/taiga-back/media
+        volumeMounts:
+          - name: taiga-media
+            mountPath: /srv/taiga-back/media
       containers:
       # https://www.caktusgroup.com/blog/2017/03/14/production-ready-dockerfile-your-python-django-app/
       - name: {{ template "taiga.fullname" . }}-back
