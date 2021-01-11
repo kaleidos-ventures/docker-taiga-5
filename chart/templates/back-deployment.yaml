@@ -1,0 +1,120 @@
+apiVersion: {{ template "taiga.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "taiga.fullname" . }}
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "taiga.matchLabels" . | nindent 6 }}
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels: {{- include "taiga.labels" . | nindent 8 }}
+      annotations:
+        checksum/config-back: {{ include (print $.Template.BasePath "/back-configmap.yaml") . | sha256sum }}
+        checksum/config-front: {{ include (print $.Template.BasePath "/front-configmap.yaml") . | sha256sum }}
+        checksum/config-back-settings: {{ include (print $.Template.BasePath "/back-settings-configmap.yaml") . | sha256sum }}
+        {{- if .Values.back.podAnnotations }}
+        {{- include "taiga.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "taiga.back.imagePullSecrets" . | indent 6 }}
+      {{- if .Values.back.affinity }}
+      affinity: {{- include "redmine.tplValue" (dict "value" .Values.back.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.back.nodeSelector }}
+      nodeSelector: {{- include "taiga.tplValue" (dict "value" .Values.back.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.back.tolerations }}
+      tolerations: {{- include "redmine.tplValue" (dict "value" .Values.back.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "taiga.serviceAccountName" . }}
+      {{- with .Values.back.securityContext }}
+      securityContext: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      # https://www.caktusgroup.com/blog/2017/03/14/production-ready-dockerfile-your-python-django-app/
+      - name: {{ template "taiga.fullname" . }}-back
+        image: {{ template "taiga.back.image" . }}
+        imagePullPolicy: {{ .Values.back.image.pullPolicy | quote }}
+        {{- if .Values.back.resources }}
+        resources: {{ toYaml .Values.back.resources | nindent 12 }}
+        {{- end }}
+        env:
+          - name: UWSGI_HTTP
+            value: ":8080"
+#          - name: UWSGI_HTTP_SOCKET
+#            value: "8080"
+          - name: UWSGI_OFFLOAD_THREADS
+            value: "4"
+#          - name: UWSGI_UWSGI_SOCKET
+#            value: "3031"
+          # Fix:
+          # [uwsgi-fileserve] security error: /etc/opt/taiga-front/..2021_01_11_07_43_28.438480027/conf.json is not under /opt/taiga-front/conf.json or a safe path
+          # [pid: 37|app: -1|req: -1/1950] 192.168.7.168 () {56 vars in 938 bytes} [Mon Jan 11 11:01:28 2021] GET /conf.json => generated 0 bytes in 0 msecs (HTTP/1.1 500) 0 headers in 0 bytes (0 switches on core 0)
+          # [uwsgi-fileserve] security error: /etc/opt/taiga-front/..2021_01_11_07_43_28.438480027/conf.json is not under /opt/taiga-front/conf.json or a safe path
+          # [pid: 37|app: -1|req: -1/1951] 192.168.7.168 () {56 vars in 938 bytes} [Mon Jan 11 11:01:28 2021] GET /conf.json => generated 0 bytes in 0 msecs (HTTP/1.1 500) 0 headers in 0 bytes (0 switches on core 0)
+          # [uwsgi-fileserve] security error: /etc/opt/taiga-front/..2021_01_11_07_43_28.438480027/conf.json is not under /opt/taiga-front/conf.json or a safe path
+          # [pid: 37|app: -1|req: -1/1952] 192.168.7.168 () {56 vars in 938 bytes} [Mon Jan 11 11:01:28 2021] GET /conf.json => generated 0 bytes in 0 msecs (HTTP/1.1 500) 0 headers in 0 bytes (0 switches on core 0)
+          - name: UWSGI_STATIC_SAFE
+            value: "/etc/opt/taiga-front/"
+          {{- if .Values.back.extraVars }}
+          {{- toYaml .Values.back.extraVars | nindent 12 }}
+          {{- end }}
+        ports:
+          - name: http-taiga-back
+            containerPort: 8080
+        # Original check: wget -q -t 1 --spider http://localhost:8080/api/v1/
+        # but it does not work so change localhost to 127.0.0.1
+        {{- if .Values.back.livenessProbe.enabled }}
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - wget -q -t 1 --spider http://127.0.0.1:8080/api/v1/
+          initialDelaySeconds: {{ .Values.back.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.back.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.back.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.back.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.back.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.back.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - 'wget -q -t 1 --spider http://127.0.0.1:8080/api/v1/'
+          initialDelaySeconds: {{ .Values.back.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.back.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.back.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.back.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.back.readinessProbe.failureThreshold }}
+        {{- end }}
+        volumeMounts:
+          - name: taiga-media
+            mountPath: /srv/taiga-back/media
+          - name: front-config
+            mountPath: /etc/opt/taiga-front
+          - name: back-config
+            mountPath: /etc/opt/taiga-back
+          - name: back-settings
+            mountPath: /opt/taiga-back/settings
+      volumes:
+        - name: taiga-media
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (include "taiga.fullname" .) }}-media
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: front-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-front
+        - name: back-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back
+        - name: back-settings
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back-settings
