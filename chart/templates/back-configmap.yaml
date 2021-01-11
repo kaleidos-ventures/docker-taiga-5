@@ -23,4 +23,3 @@ data:
 
     EVENTS_PUSH_BACKEND = "taiga.events.backends.rabbitmq.EventsPushBackend"
     EVENTS_PUSH_BACKEND_OPTIONS = {"url": "amqp://{{ .Values.rabbitmq.auth.username }}:{{ .Values.rabbitmq.auth.password }}@{{ template "taiga.fullname" . }}-rabbitmq/taiga"}
-

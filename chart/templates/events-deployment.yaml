@@ -78,4 +78,3 @@ spec:
         - name: events-config
           configMap:
             name: {{ template "taiga.fullname" . }}-events
-

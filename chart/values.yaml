@@ -381,3 +381,8 @@ rabbitmq:
 ## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
 
 createInitialUser: true
+
+## Create initial templates
+## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
+
+createInitialTemplates: true
