@@ -377,6 +377,12 @@ rabbitmq:
     
     erlangCookie: h2SNqvsJRJAeSRUlkubZTlkRB0OJgYSu
 
+  extraConfiguration: |-
+    default_vhost = taiga
+    default_permissions.configure = .*
+    default_permissions.read = .*
+    default_permissions.write = .*
+
 ## Create initial user with credentials admin/123123
 ## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
 
