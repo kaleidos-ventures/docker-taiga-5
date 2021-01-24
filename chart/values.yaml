@@ -392,3 +392,19 @@ createInitialUser: true
 ## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
 
 createInitialTemplates: true
+
+## Enable debug
+## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
+debug: false
+
+## SMTP mail delivery configuration
+## ref: https://taigaio.github.io/taiga-doc/dist/setup-production.html
+##
+smtp:
+  enabled: false
+  from: no-reply@example.com
+  host: localhost
+  port: 25
+  user:
+  password:
+  tls: False

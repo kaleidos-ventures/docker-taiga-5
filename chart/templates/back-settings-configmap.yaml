@@ -741,7 +741,34 @@ data:
 {{- end }}
 
     # Prevent secret key reuse
-    SECRET_KEY = ''
+    SECRET_KEY = "{{ .Values.back.secretKey }}"
+
+{{ if .Values.debug }}
+    DEBUG = True
+{{ end }}
+
+{{ if .Values.smtp.enabled }}
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+{{- if .Values.smtp.from }}
+    DEFAULT_FROM_EMAIL = "{{ .Values.smtp.from }}"
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+{{- end }}
+{{- if .Values.smtp.host }}
+    EMAIL_HOST = "{{ .Values.smtp.host }}"
+{{- end }}
+{{- if .Values.smtp.port }}
+    EMAIL_PORT = "{{ .Values.smtp.port }}"
+{{- end }}
+{{- if .Values.smtp.user }}
+    EMAIL_HOST_USER = "{{ .Values.smtp.user }}"
+{{- end }}
+{{- if .Values.smtp.password }}
+    EMAIL_HOST_PASSWORD = "{{ .Values.smtp.password }}"
+{{- end }}
+{{- if .Values.smtp.tls }}
+    EMAIL_USE_TLS = True
+{{- end }}
+{{ end }}
 
     MEDIA_ROOT = '/srv/taiga-back/media'
     STATIC_ROOT = '/srv/taiga-back/static'
