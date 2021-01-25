@@ -407,4 +407,5 @@ smtp:
   port: 25
   user:
   password:
-  tls: False
+  tls: false
+  ssl: false

@@ -768,6 +768,9 @@ data:
 {{- if .Values.smtp.tls }}
     EMAIL_USE_TLS = True
 {{- end }}
+{{- if .Values.smtp.ssl }}
+    EMAIL_USE_SSL = True
+{{- end }}
 {{ end }}
 
     MEDIA_ROOT = '/srv/taiga-back/media'
