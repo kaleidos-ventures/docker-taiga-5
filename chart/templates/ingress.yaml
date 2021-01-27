@@ -5,6 +5,8 @@ metadata:
   name: {{ template "taiga.fullname" . }}
   labels: {{- include "taiga.labels" . | nindent 4 }}
   annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
     {{- if .Values.ingress.certManager }}
     kubernetes.io/tls-acme: "true"
     {{- end }}
