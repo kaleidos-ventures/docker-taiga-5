@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "taiga.fullname" . }}-back
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+data:
+  settings.py: |
+    SECRET_KEY = '{{ .Values.back.secretKey }}'
+
+    PUBLIC_REGISTER_ENABLED = False
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': '{{ template "taiga.fullname" . }}',
+            'USER': '{{ .Values.postgresql.postgresqlUsername }}',
+            'PASSWORD': '{{ .Values.postgresql.postgresqlPassword }}',
+            'HOST': '{{ template "taiga.fullname" . }}-postgresql',
+            'PORT': '5432',
+        }
+    }
+
+    EVENTS_PUSH_BACKEND = "taiga.events.backends.rabbitmq.EventsPushBackend"
+    EVENTS_PUSH_BACKEND_OPTIONS = {"url": "amqp://{{ .Values.rabbitmq.auth.username }}:{{ .Values.rabbitmq.auth.password }}@{{ template "taiga.fullname" . }}-rabbitmq/taiga"}

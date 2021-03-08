@@ -1,0 +1,80 @@
+apiVersion: {{ template "taiga.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ template "taiga.fullname" . }}-events
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "taiga.matchLabels" . | nindent 6 }}
+  replicas: {{ .Values.events.replicas }}
+  template:
+    metadata:
+      labels: {{- include "taiga.labels" . | nindent 8 }}
+      annotations:
+        checksum/config-back: {{ include (print $.Template.BasePath "/back-configmap.yaml") . | sha256sum }}
+        checksum/config-front: {{ include (print $.Template.BasePath "/front-configmap.yaml") . | sha256sum }}
+        {{- if .Values.events.podAnnotations }}
+        {{- include "taiga.tplValue" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "taiga.events.imagePullSecrets" . | indent 6 }}
+      {{- if .Values.events.affinity }}
+      affinity: {{- include "redmine.tplValue" (dict "value" .Values.events.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.events.nodeSelector }}
+      nodeSelector: {{- include "taiga.tplValue" (dict "value" .Values.events.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.events.tolerations }}
+      tolerations: {{- include "redmine.tplValue" (dict "value" .Values.events.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ template "taiga.serviceAccountName" . }}
+      {{- with .Values.back.securityContext }}
+      securityContext: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ template "taiga.fullname" . }}-events
+        image: {{ template "taiga.events.image" . }}
+        imagePullPolicy: {{ .Values.events.image.pullPolicy | quote }}
+        {{- if .Values.events.resources }}
+        resources: {{ toYaml .Values.events.resources | nindent 12 }}
+        {{- end }}
+        {{- if .Values.back.extraVars }}
+        env:
+          {{- toYaml .Values.back.extraVars | nindent 12 }}
+        {{- end }}
+        ports:
+          - name: http-taiga-eve
+            containerPort: 8080
+        {{- if .Values.events.livenessProbe.enabled }}
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c 
+              - "wget -q -t 1 http://localhost:8080 2>&1 | grep -q '426 Upgrade Required' && ! egrep -m 1 -q '^Unhandled rejection ' /var/log/taiga-events.log"
+          initialDelaySeconds: {{ .Values.events.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.events.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.events.livenessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.events.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.events.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.events.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - "wget -q -t 1 http://localhost:8080 2>&1 | grep -q '426 Upgrade Required' && ! egrep -m 1 -q '^Unhandled rejection ' /var/log/taiga-events.log"
+          initialDelaySeconds: {{ .Values.events.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.events.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.events.readinessProbe.timeoutSeconds }}
+          successThreshold: {{ .Values.events.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.events.readinessProbe.failureThreshold }}
+        {{- end }}
+        volumeMounts:
+          - name: events-config
+            mountPath: /etc/opt/taiga-events
+      volumes:
+        - name: events-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-events

@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "taiga.fullname" . }}-events
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {
+      "url": "amqp://{{ .Values.rabbitmq.auth.username }}:{{ .Values.rabbitmq.auth.password }}@{{ template "taiga.fullname" . }}-rabbitmq/taiga",
+      "secret": "{{ .Values.back.secretKey }}",
+      "webSocketServer": {
+        "port": 8080
+      }
+    }

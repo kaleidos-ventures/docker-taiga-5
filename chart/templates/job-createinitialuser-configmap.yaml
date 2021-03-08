@@ -1,0 +1,24 @@
+{{- if .Values.createInitialUser }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "taiga.fullname" . }}-createinitialuser
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+data:
+  createinitialuser.sh: |
+    #!/bin/sh
+    echo wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+    wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+    notready=$?
+    while [ "$notready" != "0" ]; do
+        wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+        notready=$?
+        sleep 5s
+    done
+
+    superuserexists=$(python manage.py dumpdata users.user | grep '"is_superuser"..true' | wc -l)
+    if [ "$superuserexists" == "0" ]; then
+        python manage.py loaddata initial_user
+    fi
+{{- end }}

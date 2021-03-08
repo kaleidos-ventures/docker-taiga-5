@@ -1,0 +1,41 @@
+{{- if .Values.createInitialTemplates }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "taiga.fullname" . }}-createinitialtemplates
+spec:
+  template:
+    spec:
+      containers:
+      - name: createinitialtemplates
+        image: {{ template "taiga.back.image" . }}
+        command:
+          - sh
+          - /scripts/createinitialtemplates.sh
+        volumeMounts:
+          - name: createinitialtemplates
+            mountPath: /scripts
+          - name: front-config
+            mountPath: /etc/opt/taiga-front
+          - name: back-config
+            mountPath: /etc/opt/taiga-back
+          - name: back-settings
+            mountPath: /opt/taiga-back/settings
+      restartPolicy: Never
+      volumes:
+        - name: createinitialtemplates
+          configMap:
+            name: {{ template "taiga.fullname" . }}-createinitialtemplates
+            defaultMode: 0744
+        - name: front-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-front
+        - name: back-config
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back
+        - name: back-settings
+          configMap:
+            name: {{ template "taiga.fullname" . }}-back-settings
+  backoffLimit: 4
+{{- end }}

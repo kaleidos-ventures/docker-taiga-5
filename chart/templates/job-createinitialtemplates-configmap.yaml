@@ -1,0 +1,24 @@
+{{- if .Values.createInitialTemplates }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "taiga.fullname" . }}-createinitialtemplates
+  labels: {{- include "taiga.labels" . | nindent 4 }}
+data:
+  createinitialtemplates.sh: |
+    #!/bin/sh
+    echo wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+    wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+    notready=$?
+    while [ "$notready" != "0" ]; do
+        wget -q -t 1 --spider http://{{ template "taiga.fullname" . }}-back/api/v1/
+        notready=$?
+        sleep 5s
+    done
+
+    templatesexists=$(python manage.py dumpdata projects.projecttemplate | wc -c)
+    if [ "$templatesexists" -lt "5" ]; then
+        python manage.py loaddata initial_project_templates
+    fi
+{{- end }}
